@@ -9,7 +9,7 @@ priority = 60
 color = B57EFF
 priority = 60
 [xxxMapDragonBridge]
-color = D3003E
+color = D37C2B
 priority = 60
 [xxxMapEastmarch]
 color = 80B8CE
