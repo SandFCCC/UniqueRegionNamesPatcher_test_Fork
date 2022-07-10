@@ -27,7 +27,7 @@ namespace UniqueRegionNamesPatcher.Utility
         /// <param name="state">Reference of the <see cref="IPatcherState"/> object passed to the <see cref="Program.RunPatch(IPatcherState{ISkyrimMod, ISkyrimModGetter})"/> function.</param>
         public UrnRegionMap(Stream map_stream, Stream region_stream, FormKey worldspaceFormKey, ref IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            _worldspaceFormKey = worldspaceFormKey;
+            WorldspaceFormKey = worldspaceFormKey;
             linkCache = state.PatchMod.ToMutableLinkCache();
             var streams = SplitStream(map_stream);
             ParseRegionAreas(streams[FileHeader.RegionAreas], new(region_stream), ref state);
@@ -81,7 +81,7 @@ namespace UniqueRegionNamesPatcher.Utility
         /// <summary>
         /// The formkey of the worldspace that this RegionMap instance belongs to.
         /// </summary>
-        private readonly FormKey _worldspaceFormKey;
+        public FormKey WorldspaceFormKey { get; }
 
         #endregion Members
 
@@ -217,7 +217,7 @@ namespace UniqueRegionNamesPatcher.Utility
                         }
                     };
                     // set the primary 
-                    region.Worldspace.SetTo(_worldspaceFormKey);
+                    region.Worldspace.SetTo(WorldspaceFormKey);
 
                     state.PatchMod.Regions.Add(region);
 
