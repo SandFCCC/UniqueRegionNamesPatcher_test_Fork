@@ -15,29 +15,12 @@ using UniqueRegionNamesPatcher.Utility;
 
 namespace UniqueRegionNamesPatcher
 {
-
-    public static class ModContextExtensions
-    {
-        public static void Deconstruct<TMod, TModGetter, TTarget, TTargetGetter>(this IModContext<TMod, TModGetter, TTarget, TTargetGetter> modContext, out TTargetGetter record, out ModKey modKey, out IModContext? parent) where TMod : TModGetter, IMod where TModGetter : IModGetter where TTarget : TTargetGetter where TTargetGetter : notnull
-        {
-            record = modContext.Record;
-            modKey = modContext.ModKey;
-            parent = modContext.Parent;
-        }
-        public static void Deconstruct(this IModContext modContext, out object? record, out ModKey modKey, out IModContext? parent)
-        {
-            record = modContext.Record;
-            modKey = modContext.ModKey;
-            parent = modContext.Parent;
-        }
-    }
-
     public class Program
     {
         private static Lazy<Settings> _lazySettings = null!;
         private static Settings Settings => _lazySettings.Value;
 
-        private static readonly List<WorldspaceRecordHandler> Handlers = new();
+        private static readonly List<WorldspaceProcessor> Handlers = new();
 
         public static async Task<int> Main(string[] args)
             => await SynthesisPipeline.Instance
@@ -53,9 +36,9 @@ namespace UniqueRegionNamesPatcher
             /* v This section should be put in a loop in the future v */
 
             // Add a handler for Tamriel:
-            var handler = new WorldspaceRecordHandler(Settings.TamrielSettings.GetUrnRegionMap(ref state));
+            var handler = new WorldspaceProcessor(Settings.TamrielSettings.GetUrnRegionMap(ref state));
             Handlers.Add(handler);
-            Console.WriteLine($"Added {nameof(WorldspaceRecordHandler)} for {nameof(Worldspace)} '{handler.RegionMap.WorldspaceFormKey}'");
+            Console.WriteLine($"Added {nameof(WorldspaceProcessor)} for {nameof(Worldspace)} '{handler.RegionMap.WorldspaceFormKey}' ({handler.RegionMap.WorldspaceFormKey.ToLink<IWorldspaceGetter>()?.Resolve(state.LinkCache).EditorID})");
 
             if (Settings.verbose)
             {
@@ -81,7 +64,7 @@ namespace UniqueRegionNamesPatcher
             /* ^ This section should be put in a loop in the future ^ */
         }
 
-        private static WorldspaceRecordHandler? GetHandlerForWorldspace(IWorldspaceGetter wrld) => Handlers.FirstOrDefault(h => h.AppliesTo(wrld));
+        private static WorldspaceProcessor? GetHandlerForWorldspace(IWorldspaceGetter wrld) => Handlers.FirstOrDefault(h => h.AppliesTo(wrld));
 
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
@@ -89,27 +72,21 @@ namespace UniqueRegionNamesPatcher
 
             InitializeHandlers(state);
 
-            foreach (var wrldGetter in state.LoadOrder.PriorityOrder.Worldspace().WinningOverrides(false))
+            int totalChanges = 0;
+            foreach (var wrldGetter in state.LoadOrder.ListedOrder.Worldspace().WinningOverrides())
             {
-                if (GetHandlerForWorldspace(wrldGetter) is WorldspaceRecordHandler handler)
+                if (GetHandlerForWorldspace(wrldGetter) is WorldspaceProcessor handler)
                 {
-                    try
-                    {
-                        if (handler.ProcessWorldspace(wrldGetter) is Worldspace wrldCopy)
-                        {
-                            Console.WriteLine($"Finished processing {nameof(Worldspace)} {wrldCopy.EditorID}");
-                            state.PatchMod.Worldspaces.Set(wrldCopy);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"An unhandled exception occurred while processing {nameof(Worldspace)} {wrldGetter?.EditorID}: {ex.FormatExceptionMessage()}");
-#                       if DEBUG
-                        throw; //< rethrow exceptions in Debug configuration
-#                       endif
-                    }
+                    Worldspace copy = wrldGetter.DeepCopy();
+                    int changes = 0;
+                    handler.Process(ref copy, ref changes);
+                    Console.WriteLine($"Changed region data for {changes} cells in worldspace {copy.EditorID}");
+                    state.PatchMod.Worldspaces.Set(copy);
+                    totalChanges += changes;
                 }
             }
+
+            Console.WriteLine($"Process Complete.\nUpdated region data for {totalChanges} cell{(totalChanges == 1 ? "" : "s")}.");
         }
     }
 }
