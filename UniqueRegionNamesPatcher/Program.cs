@@ -73,7 +73,7 @@ namespace UniqueRegionNamesPatcher
             InitializeHandlers(state);
 
             int totalChanges = 0;
-            foreach (var wrldGetter in state.LoadOrder.ListedOrder.Worldspace().WinningContextOverrides())
+            foreach (var wrldGetter in state.LoadOrder.ListedOrder.Worldspace().WinningContextOverrides().Record)
             {
                 if (GetHandlerForWorldspace(wrldGetter) is WorldspaceProcessor handler)
                 {
