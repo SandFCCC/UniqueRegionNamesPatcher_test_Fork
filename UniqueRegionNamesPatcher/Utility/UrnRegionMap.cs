@@ -328,7 +328,7 @@ namespace UniqueRegionNamesPatcher.Utility
         //        IRegionGetter region = rw.FormLink.Resolve(linkCache);
         //        byte priority = region.Map?.Header?.Priority ?? 60;
         //        byte highest = 0;
-        //        state.LoadOrder.PriorityOrder.Region().WinningOverrides().ForEach(delegate (IRegionGetter modRegion)
+        //        state.LoadOrder.PriorityOrder.Region().WinningContextOverrides().ForEach(delegate (IRegionGetter modRegion)
         //        {
         //            if (modRegion.Map?.Header?.Priority != null && modRegion.Map.Header.Priority > highest)
         //                highest = modRegion.Map.Header.Priority;
